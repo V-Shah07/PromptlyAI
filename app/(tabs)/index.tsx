@@ -1217,7 +1217,7 @@ const Index = () => {
               onPress={handleSettings}
             >
               <Text style={styles.userMenuIcon}>⚙️</Text>
-              <Text style={styles.userMenuText}>Settings</Text>
+              <Text style={styles.userMenuText}>Preferences</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.userMenuItem}

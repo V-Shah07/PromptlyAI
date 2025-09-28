@@ -1,4 +1,4 @@
-import { saveEventTags } from "@/lib/firebase";
+import { getRestrictedHours, saveEventTags } from "@/lib/firebase";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Audio } from "expo-av";
 import { router } from "expo-router";
@@ -342,6 +342,22 @@ export default function AIPlannerScreen() {
       } else {
         promptText += "No existing events";
       }
+      
+      // Add restricted hours information to the prompt
+      try {
+        const userId = "user123"; // Mock user ID - replace with actual user authentication
+        const restrictedHours = await getRestrictedHours(userId);
+        if (restrictedHours && restrictedHours.length > 0) {
+          const restrictedRanges = restrictedHours
+            .map(range => `${range.startTime} - ${range.endTime}`)
+            .join(", ");
+          promptText += `. IMPORTANT: I have restricted hours when NO events can be scheduled: ${restrictedRanges}. Do NOT schedule any tasks during these time periods.`;
+        }
+      } catch (error) {
+        console.log("⚠️ Could not load restricted hours:", error);
+        // Continue without restricted hours if there's an error
+      }
+      
       promptText += `. I also want to do the following **NEW** tasks: ${userInput}`;
       console.log("📝 Generated prompt:", promptText); // Call new scheduling API
 
@@ -359,10 +375,70 @@ export default function AIPlannerScreen() {
             }, End: ${task.end_time}`
           );
         });
-      } // Store the current plan for confirmation
-      setCurrentPlan(scheduleResult); // Format the response for display
+      }
 
+
+      // Store the current plan for confirmation
+      setCurrentPlan(scheduleResult);
+
+      // Check for conflicts and prepare warning message
+      let conflictWarning = "";
+      try {
+        const userId = "user123"; // Mock user ID - replace with actual user authentication
+        const restrictedHours = await getRestrictedHours(userId);
+        if (restrictedHours && restrictedHours.length > 0 && scheduleResult.scheduled_tasks) {
+          const conflicts: Array<{
+            task: string;
+            taskTime: string;
+            restrictedTime: string;
+          }> = [];
+          
+          scheduleResult.scheduled_tasks.forEach((task) => {
+            const taskStartTime = new Date(task.start_time);
+            const taskEndTime = new Date(task.end_time);
+            
+            // Extract time in HH:MM format
+            const taskStartTimeStr = taskStartTime.toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false
+            });
+            const taskEndTimeStr = taskEndTime.toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false
+            });
+            
+            // Check if task conflicts with any restricted hours
+            restrictedHours.forEach((restrictedRange) => {
+              if (taskStartTimeStr < restrictedRange.endTime && taskEndTimeStr > restrictedRange.startTime) {
+                conflicts.push({
+                  task: task.title,
+                  taskTime: `${taskStartTimeStr} - ${taskEndTimeStr}`,
+                  restrictedTime: `${restrictedRange.startTime} - ${restrictedRange.endTime}`
+                });
+              }
+            });
+          });
+          
+          if (conflicts.length > 0) {
+            console.log("⚠️ Found conflicts with restricted hours:", conflicts);
+            conflictWarning = `\n⚠️ **Warning**: Some tasks conflict with your restricted hours:\n`;
+            conflicts.forEach(conflict => {
+              conflictWarning += `• "${conflict.task}" (${conflict.taskTime}) conflicts with restricted time ${conflict.restrictedTime}\n`;
+            });
+            conflictWarning += `\nPlease review your schedule and consider rescheduling these tasks.\n\n`;
+          }
+        }
+      } catch (error) {
+        console.log("⚠️ Could not validate against restricted hours:", error);
+      }
+
+      // Format the response for display
       let responseText = `Here's your personalized schedule:\n\n`;
+      if (conflictWarning) {
+        responseText += conflictWarning;
+      }
       if (
         scheduleResult.scheduled_tasks &&
         scheduleResult.scheduled_tasks.length > 0
@@ -458,8 +534,8 @@ export default function AIPlannerScreen() {
         const newEnd = new Date(endTime);
 
         return existingEvents.some((event) => {
-          const existingStart = new Date(event.start_datetime);
-          const existingEnd = new Date(event.end_datetime);
+          const existingStart = new Date(event.start_time);
+          const existingEnd = new Date(event.end_time);
 
           // Check for overlap with 30-minute buffer
           const buffer = 30 * 60 * 1000; // 30 minutes in milliseconds

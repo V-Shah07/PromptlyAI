@@ -356,7 +356,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Promptly/Promptly.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YP43DFTDL5;
+				DEVELOPMENT_TEAM = KGN5AX9WGS;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -375,7 +375,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.vshah0777.Promptly;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kvis.Promptly;
 				PRODUCT_NAME = Promptly;
 				SWIFT_OBJC_BRIDGING_HEADER = "Promptly/Promptly-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -393,7 +393,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Promptly/Promptly.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = YP43DFTDL5;
+				DEVELOPMENT_TEAM = KGN5AX9WGS;
 				INFOPLIST_FILE = Promptly/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -407,7 +407,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.vshah0777.Promptly;
+				PRODUCT_BUNDLE_IDENTIFIER = com.kvis.Promptly;
 				PRODUCT_NAME = Promptly;
 				SWIFT_OBJC_BRIDGING_HEADER = "Promptly/Promptly-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;

@@ -1,7 +1,7 @@
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -32,6 +32,14 @@ export default function RootLayout() {
           />
           <Stack.Screen
             name="task-details"
+            options={{ headerShown: false, presentation: "card" }}
+          />
+          <Stack.Screen
+            name="analytics"
+            options={{ headerShown: false, presentation: "card" }}
+          />
+          <Stack.Screen
+            name="preferences"
             options={{ headerShown: false, presentation: "card" }}
           />
         </Stack>
