@@ -661,6 +661,7 @@ const Index = () => {
     onToggleComplete,
     onReschedule,
     event,
+    description,
   }: {
     task: string;
     time: string;
@@ -672,13 +673,14 @@ const Index = () => {
     onToggleComplete: (eventId: string) => void;
     onReschedule: (event: any) => void;
     event: any;
+    description?: string;
   }) => (
     <TouchableOpacity
       style={styles.taskItem}
       onPress={() =>
         router.push({
           pathname: "/task-details",
-          params: { task, time, duration, category, color },
+          params: { task, time, duration, category, color, description },
         })
       }
     >
@@ -997,6 +999,7 @@ const Index = () => {
                       onToggleComplete={toggleTaskCompletion}
                       onReschedule={handleRescheduleEvent}
                       event={event}
+                      description={event.description}
                     />
                   );
                 })

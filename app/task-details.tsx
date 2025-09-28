@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function TaskDetails() {
   const params = useLocalSearchParams();
-  const { task, time, duration, category, color } = params;
+  const { task, time, duration, category, color, description } = params;
 
   const [timeTracking, setTimeTracking] = useState({
     estimated: (duration as string) || "2h",
@@ -80,8 +80,7 @@ export default function TaskDetails() {
 
         {/* Description */}
         <Text style={styles.description}>
-          Complete the presentation slides for the machine learning project
-          including data analysis, model results, and conclusions.
+          {description || "No description available for this task."}
         </Text>
 
         {/* Time and Duration */}
