@@ -811,7 +811,7 @@ const Index = () => {
             style={styles.planButton}
             onPress={() => router.push("/ai-planner")}
           >
-            <Text style={styles.planButtonText}>+ Plan My Day</Text>
+            <Text style={styles.planButtonText}>Plan My Day</Text>
           </TouchableOpacity>
 
           {/* Schedule Section */}

@@ -1,4 +1,5 @@
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
+import { Audio } from "expo-av";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -13,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { transcribeAudio } from "./(tabs)/ttsAPI";
 import {
   createEvent,
   findEventsByDate,
@@ -114,6 +116,81 @@ export default function AIPlannerScreen() {
   const [todaysEvents, setTodaysEvents] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [currentPlan, setCurrentPlan] = useState<any>(null);
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      console.log("🔧 Starting voice recording...");
+
+      // Request permissions
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Required",
+          "Microphone permission is required for voice recording"
+        );
+        return;
+      }
+
+      // Set audio mode for recording
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      // Create a new recording
+      const { recording: newRecording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY
+      );
+
+      setRecording(newRecording);
+      setIsRecording(true);
+      console.log("✅ Started voice recording");
+    } catch (err) {
+      console.error("❌ Start recording error:", err);
+      Alert.alert(
+        "Error",
+        "Failed to start recording: " + (err as Error).message
+      );
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording || !isRecording) return;
+
+    try {
+      console.log("🔧 Stopping voice recording...");
+
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+
+      setIsRecording(false);
+      setRecording(null);
+
+      if (!uri) {
+        throw new Error("No recording URI found");
+      }
+
+      console.log("✅ Recorded file:", uri);
+
+      // Transcribe the audio
+      const text = await transcribeAudio(uri);
+      console.log("✅ Transcription result:", text);
+
+      // Add the transcribed text to the message input
+      setMessage(text || "");
+    } catch (err) {
+      console.error("❌ Stop recording error:", err);
+      Alert.alert(
+        "Error",
+        "Failed to process recording: " + (err as Error).message
+      );
+    }
+  };
 
   // Check for existing user on component mount
   useEffect(() => {
@@ -680,6 +757,27 @@ export default function AIPlannerScreen() {
         style={styles.inputContainer}
       >
         <View style={styles.inputWrapper}>
+          {/* Voice Recording Buttons - Left side */}
+          {!isRecording ? (
+            <TouchableOpacity
+              style={[
+                styles.voiceButton,
+                !currentUser && styles.voiceButtonDisabled,
+              ]}
+              onPress={startRecording}
+              disabled={!currentUser}
+            >
+              <Text style={styles.voiceButtonText}>🎙️</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={stopRecording}
+            >
+              <Text style={styles.cancelButtonText}>❌</Text>
+            </TouchableOpacity>
+          )}
+
           <TextInput
             style={[styles.textInput, !currentUser && styles.textInputDisabled]}
             value={message}
@@ -838,6 +936,35 @@ const styles = StyleSheet.create({
   textInputDisabled: {
     color: "#9CA3AF",
     backgroundColor: "#F9FAFB",
+  },
+  voiceButton: {
+    backgroundColor: "#E2E8F0",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  voiceButtonDisabled: {
+    backgroundColor: "#F3F4F6",
+  },
+  voiceButtonText: {
+    fontSize: 24,
+    color: "#64748B",
+  },
+  cancelButton: {
+    backgroundColor: "#FEE2E2",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  cancelButtonText: {
+    fontSize: 24,
+    color: "#DC2626",
   },
   sendButton: {
     backgroundColor: "#E2E8F0",

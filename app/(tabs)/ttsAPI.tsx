@@ -2,11 +2,8 @@ async function transcribeAudio(fileUri: string): Promise<string> {
   try {
     console.log("🔧 Transcribing audio from:", fileUri);
 
-    // Get API key from environment variable
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error("OPENAI_API_KEY environment variable is not set");
-    }
+    // API key directly in code
+    const apiKey = "ENTER_YOUR_API_KEY";
 
     // Create form data for the API request
     const formData = new FormData();
