@@ -11,10 +11,7 @@ export default function TabLayout() {
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: Colors[colorScheme ?? "light"].background,
-          borderTopColor: Colors[colorScheme ?? "light"].tabIconDefault,
-        },
+        tabBarStyle: { display: "none" }, // Hide the tab bar
       }}
     >
       <Tabs.Screen
@@ -22,7 +19,11 @@ export default function TabLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol name={focused ? "house.fill" : "house"} size={24} color={color} />
+            <IconSymbol
+              name={focused ? "house.fill" : "house"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -31,7 +32,15 @@ export default function TabLayout() {
         options={{
           title: "Explore",
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol name={focused ? "magnifyingglass.circle.fill" : "magnifyingglass.circle"} size={24} color={color} />
+            <IconSymbol
+              name={
+                focused
+                  ? "magnifyingglass.circle.fill"
+                  : "magnifyingglass.circle"
+              }
+              size={24}
+              color={color}
+            />
           ),
         }}
       />
@@ -40,7 +49,11 @@ export default function TabLayout() {
         options={{
           title: "TTS",
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol name={focused ? "mic.fill" : "mic"} size={24} color={color} />
+            <IconSymbol
+              name={focused ? "mic.fill" : "mic"}
+              size={24}
+              color={color}
+            />
           ),
         }}
       />

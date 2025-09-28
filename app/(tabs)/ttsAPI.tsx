@@ -2,8 +2,7 @@ async function transcribeAudio(fileUri: string): Promise<string> {
   try {
     console.log("🔧 Transcribing audio from:", fileUri);
 
-    // API key directly in code
-    const apiKey = "PUTAPIKEYHERE";
+    const apiKey = "ADD_API_KEY_HERE";
     // Create form data for the API request
     const formData = new FormData();
 

@@ -8,9 +8,11 @@ import {
   statusCodes,
 } from "@react-native-google-signin/google-signin";
 import { router } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Alert,
+  Animated,
+  PanResponder,
   ScrollView,
   StyleSheet,
   Text,
@@ -193,21 +195,6 @@ const Index = () => {
           text: "Reschedule",
           onPress: async () => {
             try {
-              console.log("🔄 Starting reschedule for:", event.title);
-              console.log(
-                "🔄 Full event data:",
-                JSON.stringify(event, null, 2)
-              );
-
-              // Show event data in alert for debugging
-              Alert.alert(
-                "Debug: Event Data",
-                `Title: ${event.title}\nStart: ${event.start_time}\nEnd: ${
-                  event.end_time
-                }\nHas start_datetime: ${!!event.start_datetime}\nHas end_datetime: ${!!event.end_datetime}`,
-                [{ text: "OK" }]
-              );
-
               // Check if event has original datetime fields
               let currentStartDateTime, currentEndDateTime;
 
@@ -215,7 +202,6 @@ const Index = () => {
                 // Use original datetime fields if available
                 currentStartDateTime = event.start_datetime;
                 currentEndDateTime = event.end_datetime;
-                console.log("🔄 Using original datetime fields");
               } else {
                 // Fallback to converting display times
                 const startTime = event.start_time; // e.g., "10:30 PM"
@@ -250,21 +236,11 @@ const Index = () => {
                   endTime,
                   selectedDate
                 );
-                console.log(
-                  "🔄 Converted from display times using date:",
-                  selectedDate
-                );
               }
-
-              console.log("🔄 Current start:", currentStartDateTime);
-              console.log("🔄 Current end:", currentEndDateTime);
 
               // Add 24 hours to get tomorrow's times
               const currentStart = new Date(currentStartDateTime);
               const currentEnd = new Date(currentEndDateTime);
-
-              console.log("🔄 Current start Date object:", currentStart);
-              console.log("🔄 Current end Date object:", currentEnd);
 
               // Add 24 hours using local time to avoid timezone issues
               const tomorrowStart = new Date(currentStart);
@@ -289,9 +265,6 @@ const Index = () => {
               let finalEndDateTime = formatLocalDateTime(tomorrowEnd);
               let hoursAdded = 24; // Start with 24 hours (next day)
 
-              console.log("🔄 Initial tomorrow start:", finalStartDateTime);
-              console.log("🔄 Initial tomorrow end:", finalEndDateTime);
-
               // Check for conflicts and find available slot
               let conflictCheck = await checkTimeSlotConflict(
                 finalStartDateTime,
@@ -304,9 +277,6 @@ const Index = () => {
               while (conflictCheck.hasConflict && hoursAdded < 48) {
                 // Max 48 hours (2 days)
                 hoursAdded += 0.5; // Add 30 minutes
-                console.log(
-                  `🔄 Conflict found, trying ${hoursAdded} hours later...`
-                );
 
                 // Add 30 more minutes
                 const newStart = new Date(currentStart);
@@ -317,10 +287,6 @@ const Index = () => {
 
                 finalStartDateTime = formatLocalDateTime(newStart);
                 finalEndDateTime = formatLocalDateTime(newEnd);
-
-                console.log(
-                  `🔄 Trying new time: ${finalStartDateTime} - ${finalEndDateTime}`
-                );
 
                 // Check for conflicts again
                 conflictCheck = await checkTimeSlotConflict(
@@ -340,17 +306,6 @@ const Index = () => {
                 return;
               }
 
-              console.log("🔄 Final start:", finalStartDateTime);
-              console.log("🔄 Final end:", finalEndDateTime);
-              console.log("🔄 Hours added:", hoursAdded);
-
-              // Show datetime values in alert for debugging
-              Alert.alert(
-                "Debug: DateTime Values",
-                `Current Start: ${currentStartDateTime}\nCurrent End: ${currentEndDateTime}\nNew Start: ${finalStartDateTime}\nNew End: ${finalEndDateTime}\nHours Added: ${hoursAdded}`,
-                [{ text: "OK" }]
-              );
-
               // Call moveEvent directly
               const moveData = {
                 title: event.title,
@@ -358,11 +313,6 @@ const Index = () => {
                 new_start_datetime: finalStartDateTime,
                 new_end_datetime: finalEndDateTime,
               };
-
-              console.log(
-                "🔄 Calling moveEvent with data:",
-                JSON.stringify(moveData, null, 2)
-              );
 
               const result = await moveEvent(moveData, accessToken);
 
@@ -687,6 +637,152 @@ const Index = () => {
   };
 
   // TaskItem Component
+  // Swipeable TaskItem with swipe-to-complete functionality
+  const SwipeableTaskItem = ({
+    task,
+    time,
+    duration,
+    category,
+    color,
+    isCompleted,
+    eventId,
+    onToggleComplete,
+    onReschedule,
+    event,
+    description,
+    tags,
+  }: {
+    task: string;
+    time: string;
+    duration: string;
+    category: string;
+    color: string;
+    isCompleted?: boolean;
+    eventId: string;
+    onToggleComplete: (eventId: string) => void;
+    onReschedule: (event: any) => void;
+    event: any;
+    description?: string;
+    tags?: string[];
+  }) => {
+    const translateX = useRef(new Animated.Value(0)).current;
+
+    const panResponder = PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to horizontal swipes
+        return (
+          Math.abs(gestureState.dx) > 8 &&
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy)
+        );
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Allow both left and right swipes and limit max distance
+        const maxDistance = 100;
+        const clampedDx = Math.max(
+          -maxDistance,
+          Math.min(gestureState.dx, maxDistance)
+        );
+        translateX.setValue(clampedDx);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > 40 && !isCompleted) {
+          // Swipe right threshold reached - complete the task
+          Animated.timing(translateX, {
+            toValue: 200,
+            duration: 150,
+            useNativeDriver: true,
+          }).start(() => {
+            onToggleComplete(eventId);
+            translateX.setValue(0);
+          });
+        } else if (gestureState.dx < -40) {
+          // Swipe left threshold reached - delete the task
+          Animated.timing(translateX, {
+            toValue: -200,
+            duration: 150,
+            useNativeDriver: true,
+          }).start(() => {
+            console.log("Delete func");
+            translateX.setValue(0);
+          });
+        } else {
+          // Snap back to original position
+          Animated.spring(translateX, {
+            toValue: 0,
+            tension: 100,
+            friction: 8,
+            useNativeDriver: true,
+          }).start();
+        }
+      },
+    });
+
+    return (
+      <View style={styles.swipeableContainer}>
+        {/* Right swipe background (Complete) */}
+        <Animated.View
+          style={[
+            styles.swipeBackgroundRight,
+            {
+              opacity: translateX.interpolate({
+                inputRange: [0, 15, 40],
+                outputRange: [0, 0.5, 1],
+                extrapolate: "clamp",
+              }),
+            },
+          ]}
+        >
+          <View style={styles.swipeIcon}>
+            <Text style={styles.swipeIconText}>✓</Text>
+          </View>
+          <Text style={styles.swipeText}>Complete</Text>
+        </Animated.View>
+
+        {/* Left swipe background (Delete) */}
+        <Animated.View
+          style={[
+            styles.swipeBackgroundLeft,
+            {
+              opacity: translateX.interpolate({
+                inputRange: [-40, -15, 0],
+                outputRange: [1, 0.5, 0],
+                extrapolate: "clamp",
+              }),
+            },
+          ]}
+        >
+          <View style={styles.swipeIcon}>
+            <Text style={styles.swipeIconText}>🗑️</Text>
+          </View>
+          <Text style={styles.swipeText}>Delete</Text>
+        </Animated.View>
+        <Animated.View
+          style={[
+            {
+              transform: [{ translateX }],
+            },
+          ]}
+          {...panResponder.panHandlers}
+        >
+          <TaskItem
+            task={task}
+            time={time}
+            duration={duration}
+            category={category}
+            color={color}
+            isCompleted={isCompleted}
+            eventId={eventId}
+            onToggleComplete={onToggleComplete}
+            onReschedule={onReschedule}
+            event={event}
+            description={description}
+            tags={tags}
+          />
+        </Animated.View>
+      </View>
+    );
+  };
+
   const TaskItem = ({
     task,
     time,
@@ -759,16 +855,20 @@ const Index = () => {
       >
         <View style={styles.taskLeft}>
           <TouchableOpacity
-            style={[
-              styles.taskCircle,
-              isCompleted && styles.taskCircleCompleted,
-            ]}
+            style={styles.taskCircleContainer}
             onPress={(e) => {
               e.stopPropagation(); // Prevent navigating to task details
               onToggleComplete(eventId);
             }}
           >
-            {isCompleted && <Text style={styles.checkmark}>✓</Text>}
+            <View
+              style={[
+                styles.taskCircle,
+                isCompleted && styles.taskCircleCompleted,
+              ]}
+            >
+              {isCompleted && <Text style={styles.checkmark}>✓</Text>}
+            </View>
           </TouchableOpacity>
           <View style={styles.taskContent}>
             <Text
@@ -1131,7 +1231,7 @@ const Index = () => {
                   });
 
                   return (
-                    <TaskItem
+                    <SwipeableTaskItem
                       key={event.event_id || index}
                       task={event.title}
                       time={event.start_time}
@@ -1380,16 +1480,28 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 24,
   },
+  taskCircleContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
   taskCircle: {
     width: 20,
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
     borderColor: "#E0E0E0",
-    marginRight: 16,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
+  },
+  taskCircleCompleted: {
+    backgroundColor: "#4CAF50",
+    borderColor: "#4CAF50",
   },
   taskLeft: {
     flexDirection: "row",
@@ -1506,10 +1618,6 @@ const styles = StyleSheet.create({
     color: "#999",
     fontStyle: "italic",
   },
-  taskCircleCompleted: {
-    backgroundColor: "#4CAF50",
-    borderColor: "#4CAF50",
-  },
   checkmark: {
     color: "white",
     fontSize: 12,
@@ -1591,5 +1699,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#374151",
     fontWeight: "500",
+  },
+  // Swipe functionality styles
+  swipeableContainer: {
+    position: "relative",
+    overflow: "hidden",
+  },
+  swipeBackgroundRight: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#10B981",
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    paddingHorizontal: 20,
+  },
+  swipeBackgroundLeft: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#EF4444",
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    paddingHorizontal: 20,
+  },
+  swipeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  swipeIconText: {
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  swipeText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
