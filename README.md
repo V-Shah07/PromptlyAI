@@ -15,9 +15,9 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    Create a `.env` file in the root directory and add your OpenAI API key:
 
    ```
-   EXPO_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
+   OPENAI_API_KEY=your_openai_api_key_here
    ```
-   
+
    **Note:** The app requires a valid OpenAI API key to function. Without it, the speech-to-text feature will not work.
 
 3. Start the app
