@@ -337,6 +337,7 @@ export default function AIPlannerScreen() {
       const accessToken = tokens.accessToken;
       let createdEventsCount = 0;
       let skippedEventsCount = 0;
+      let movedEventsCount = 0;
       let totalEvents = 0;
       if (
         currentPlan.scheduled_tasks &&
@@ -370,52 +371,107 @@ export default function AIPlannerScreen() {
             console.log("📅 Formatted start_time:", formattedStartTime);
             console.log("📅 Formatted end_time:", formattedEndTime);
 
-            // Check for conflicts before creating the event
+            // Check for conflicts and try alternative times if needed
             console.log("🔍 Checking for time slot conflicts...");
-            const conflictCheck = await checkTimeSlotConflict(
-              formattedStartTime,
-              formattedEndTime,
+            let finalStartTime = formattedStartTime;
+            let finalEndTime = formattedEndTime;
+            let foundAvailableSlot = false;
+            let hoursAdded = 0;
+            const maxHoursToTry = 12; // Try up to 12 hours ahead
+
+            // Try the original time first
+            let conflictCheck = await checkTimeSlotConflict(
+              finalStartTime,
+              finalEndTime,
               accessToken
             );
 
-            if (conflictCheck.hasConflict) {
-              console.log("⚠️ Conflict detected for task:", task.title);
+            // If there's a conflict, try moving forward by 1-hour increments
+            while (conflictCheck.hasConflict && hoursAdded < maxHoursToTry) {
+              hoursAdded += 1; // Add 1 hour
               console.log(
-                "⚠️ Conflicting events:",
-                conflictCheck.conflictingEvents
+                `⚠️ Conflict found for "${task.title}", trying ${hoursAdded} hour(s) later...`
               );
 
-              // Skip this event and continue with the next one
-              console.log("⏭️ Skipping conflicting event:", task.title);
+              // Calculate new times by adding hours
+              const originalStart = new Date(formattedStartTime);
+              const originalEnd = new Date(formattedEndTime);
+
+              const newStart = new Date(
+                originalStart.getTime() + hoursAdded * 60 * 60 * 1000
+              );
+              const newEnd = new Date(
+                originalEnd.getTime() + hoursAdded * 60 * 60 * 1000
+              );
+
+              // Format as local datetime string to avoid timezone conversion
+              const formatLocalDateTime = (date: Date): string => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, "0");
+                const day = String(date.getDate()).padStart(2, "0");
+                const hours = String(date.getHours()).padStart(2, "0");
+                const minutes = String(date.getMinutes()).padStart(2, "0");
+                const seconds = String(date.getSeconds()).padStart(2, "0");
+                return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+              };
+
+              finalStartTime = formatLocalDateTime(newStart);
+              finalEndTime = formatLocalDateTime(newEnd);
+
+              console.log(
+                `🔄 Trying new time: ${finalStartTime} - ${finalEndTime}`
+              );
+
+              // Check for conflicts again
+              conflictCheck = await checkTimeSlotConflict(
+                finalStartTime,
+                finalEndTime,
+                accessToken
+              );
+            }
+
+            if (conflictCheck.hasConflict) {
+              console.log(
+                "❌ No available slot found within 12 hours for:",
+                task.title
+              );
+              console.log("⏭️ Skipping event:", task.title);
               skippedEventsCount++;
               continue;
             }
 
-            console.log(
-              "✅ No conflicts found, proceeding with event creation"
-            );
+            if (hoursAdded > 0) {
+              console.log(
+                `✅ Found available slot ${hoursAdded} hour(s) later for: ${task.title}`
+              );
+              movedEventsCount++;
+            } else {
+              console.log("✅ No conflicts found, using original time");
+            }
+
+            foundAvailableSlot = true;
 
             // Convert the task times to the format expected by the calendar API
             const eventData = {
               title: task.title || "Planned Task",
-              start_datetime: formattedStartTime, // Preserve original dates from AI API
-              end_datetime: formattedEndTime, // Preserve original dates from AI API
+              start_datetime: finalStartTime, // Use the final time (original or adjusted)
+              end_datetime: finalEndTime, // Use the final time (original or adjusted)
               description: task.description || task.reasoning || "",
             };
             console.log("📅 Final event data with dates:", eventData);
             console.log(
               "📅 Event start date/time:",
-              new Date(formattedStartTime).toLocaleString()
+              new Date(finalStartTime).toLocaleString()
             );
             console.log(
               "📅 Event end date/time:",
-              new Date(formattedEndTime).toLocaleString()
+              new Date(finalEndTime).toLocaleString()
             );
             const result = await createEvent(eventData, accessToken);
             console.log("✅ Event created successfully:", result);
             console.log(
               "✅ Event created on date:",
-              new Date(formattedStartTime).toDateString()
+              new Date(finalStartTime).toDateString()
             );
 
             createdEventsCount++;
@@ -431,6 +487,10 @@ export default function AIPlannerScreen() {
       const confirmationMessage = {
         id: messages.length + 1,
         text: `✅ Perfect! Your schedule has been successfully created!\n\n📊 **Summary:**\n• Created ${createdEventsCount} of ${totalEvents} calendar events${
+          movedEventsCount > 0
+            ? `\n• Moved ${movedEventsCount} events to avoid conflicts`
+            : ""
+        }${
           skippedEventsCount > 0
             ? `\n• Skipped ${skippedEventsCount} events due to conflicts`
             : ""
@@ -445,6 +505,10 @@ export default function AIPlannerScreen() {
       Alert.alert(
         "Schedule Created! 🎉",
         `Your personalized schedule has been added to your calendar!\n\n📅 ${createdEventsCount} of ${totalEvents} events created successfully.${
+          movedEventsCount > 0
+            ? `\n🔄 ${movedEventsCount} events were moved to avoid conflicts.`
+            : ""
+        }${
           skippedEventsCount > 0
             ? `\n⚠️ ${skippedEventsCount} events were skipped due to conflicts with existing events.`
             : ""
