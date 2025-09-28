@@ -14,7 +14,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  checkTimeSlotConflict,
   createEvent,
   findEventsByDate,
   getLocalDateString,
@@ -163,9 +162,6 @@ export default function AIPlannerScreen() {
                   eventsText += `**${index + 1}.** **${
                     event.title
                   }** (${startTime} - ${endTime})\n`;
-                  if (event.description && event.description.trim()) {
-                    eventsText += `   📝 ${event.description}\n`;
-                  }
                   if (event.location && event.location.trim()) {
                     eventsText += `    ${event.location}\n`;
                   }
@@ -295,21 +291,34 @@ export default function AIPlannerScreen() {
       ) {
         scheduleResult.scheduled_tasks.forEach((task, index) => {
           // Convert ISO datetime to human-readable format
-          const formatTime = (timeStr: string) => {
+          const formatDateTime = (
+            timeStr: string,
+            includeDate: boolean = false
+          ) => {
             const date = new Date(timeStr);
-            return date
+            const time = date
               .toLocaleTimeString("en-US", {
                 hour: "numeric",
                 minute: "2-digit",
                 hour12: true,
               })
               .replace(/:00$/, "");
+
+            if (includeDate) {
+              const dateStr = date.toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              });
+              return `${dateStr} ${time}`;
+            }
+            return time;
           };
-          const startTime = formatTime(task.start_time);
-          const endTime = formatTime(task.end_time);
+          const startDateTime = formatDateTime(task.start_time, true);
+          const endTime = formatDateTime(task.end_time, false);
           responseText += `**${index + 1}.** **${
             task.title
-          }** (${startTime} - ${endTime})\n`;
+          }** (${startDateTime} - ${endTime})\n`;
         });
       } // Add AI response with the plan
 
@@ -353,6 +362,37 @@ export default function AIPlannerScreen() {
       let skippedEventsCount = 0;
       let movedEventsCount = 0;
       let totalEvents = 0;
+
+      // Fetch all existing events once at the beginning for local conflict checking
+      console.log("🔍 Fetching existing events for conflict checking...");
+      const existingEvents = await findEventsByDate(
+        getLocalDateString(),
+        accessToken
+      );
+      console.log(`📅 Found ${existingEvents.length} existing events`);
+
+      // Helper function to check conflicts locally
+      const checkLocalConflict = (
+        startTime: string,
+        endTime: string
+      ): boolean => {
+        const newStart = new Date(startTime);
+        const newEnd = new Date(endTime);
+
+        return existingEvents.some((event) => {
+          const existingStart = new Date(event.start_datetime);
+          const existingEnd = new Date(event.end_datetime);
+
+          // Check for overlap with 30-minute buffer
+          const buffer = 30 * 60 * 1000; // 30 minutes in milliseconds
+          const newStartWithBuffer = new Date(newStart.getTime() - buffer);
+          const newEndWithBuffer = new Date(newEnd.getTime() + buffer);
+
+          return (
+            newStartWithBuffer < existingEnd && newEndWithBuffer > existingStart
+          );
+        });
+      };
       if (
         currentPlan.scheduled_tasks &&
         Array.isArray(currentPlan.scheduled_tasks)
@@ -394,14 +434,10 @@ export default function AIPlannerScreen() {
             const maxHoursToTry = 12; // Try up to 12 hours ahead
 
             // Try the original time first
-            let conflictCheck = await checkTimeSlotConflict(
-              finalStartTime,
-              finalEndTime,
-              accessToken
-            );
+            let hasConflict = checkLocalConflict(finalStartTime, finalEndTime);
 
             // If there's a conflict, try moving forward by 1-hour increments
-            while (conflictCheck.hasConflict && hoursAdded < maxHoursToTry) {
+            while (hasConflict && hoursAdded < maxHoursToTry) {
               hoursAdded += 1; // Add 1 hour
               console.log(
                 `⚠️ Conflict found for "${task.title}", trying ${hoursAdded} hour(s) later...`
@@ -437,14 +473,10 @@ export default function AIPlannerScreen() {
               );
 
               // Check for conflicts again
-              conflictCheck = await checkTimeSlotConflict(
-                finalStartTime,
-                finalEndTime,
-                accessToken
-              );
+              hasConflict = checkLocalConflict(finalStartTime, finalEndTime);
             }
 
-            if (conflictCheck.hasConflict) {
+            if (hasConflict) {
               console.log(
                 "❌ No available slot found within 12 hours for:",
                 task.title
@@ -751,7 +783,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   messageBubble: {
-    maxWidth: "80%",
+    maxWidth: "95%",
     padding: 15,
     borderRadius: 20,
   },
