@@ -1,8 +1,12 @@
-import { config } from "../../config";
-
 async function transcribeAudio(fileUri: string): Promise<string> {
   try {
     console.log("🔧 Transcribing audio from:", fileUri);
+
+    // Get API key from environment variable
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error("OPENAI_API_KEY environment variable is not set");
+    }
 
     // Create form data for the API request
     const formData = new FormData();
@@ -24,7 +28,7 @@ async function transcribeAudio(fileUri: string): Promise<string> {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${config.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "multipart/form-data",
         },
         body: formData,
