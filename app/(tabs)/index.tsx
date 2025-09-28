@@ -6,7 +6,6 @@ import {
   isSuccessResponse,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
-import { Button } from "@react-navigation/elements";
 import { router } from "expo-router";
 import React, { useEffect } from "react";
 import {
@@ -14,7 +13,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -76,7 +74,6 @@ interface CalendarApiService {
 const Index = () => {
   const [userInfo, setUserInfo] = React.useState<any>(null);
   const [accessToken, setAccessToken] = React.useState<string | null>(null);
-  const [showDebugPanel, setShowDebugPanel] = React.useState(false);
   const [todaysEvents, setTodaysEvents] = React.useState<any[]>([]);
   const [loadingEvents, setLoadingEvents] = React.useState(false);
   const [completedTasks, setCompletedTasks] = React.useState<Set<string>>(
@@ -85,29 +82,6 @@ const Index = () => {
   const [selectedDate, setSelectedDate] = React.useState<string>(
     getLocalDateString()
   );
-
-  // Form states for creating events
-  const [createEventTitle, setCreateEventTitle] = React.useState("Test Event");
-  const [createStartDateTime, setCreateStartDateTime] = React.useState(
-    "2025-12-28T10:00:00"
-  );
-  const [createEndDateTime, setCreateEndDateTime] = React.useState(
-    "2025-12-28T11:00:00"
-  );
-
-  // Form states for moving events
-  const [moveEventTitle, setMoveEventTitle] = React.useState("Test Event");
-  const [moveCurrentStartDateTime, setMoveCurrentStartDateTime] =
-    React.useState("2025-12-28T10:00:00");
-  const [moveNewStartDateTime, setMoveNewStartDateTime] = React.useState(
-    "2025-12-28T14:00:00"
-  );
-  const [moveNewEndDateTime, setMoveNewEndDateTime] = React.useState(
-    "2025-12-28T15:00:00"
-  );
-
-  // Form states for finding events
-  const [findEventsDate, setFindEventsDate] = React.useState("2025-12-28");
 
   // Effect to check for existing user and fetch events on mount
   useEffect(() => {
@@ -147,6 +121,19 @@ const Index = () => {
     }
   }, [accessToken]);
 
+  // Function to toggle task completion
+  const toggleTaskCompletion = (eventId: string) => {
+    setCompletedTasks((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId);
+      } else {
+        newSet.add(eventId);
+      }
+      return newSet;
+    });
+  };
+
   // API service function
   const createApiService = (token: string): CalendarApiService => {
     const makeRequest = async (endpoint: string, data: any) => {
@@ -182,19 +169,6 @@ const Index = () => {
       findEvent: (data) => makeRequest("/event/find", data),
       findEvents: (data) => makeRequest("/events/find", data),
     };
-  };
-
-  // Function to toggle task completion
-  const toggleTaskCompletion = (eventId: string) => {
-    setCompletedTasks((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(eventId)) {
-        newSet.delete(eventId);
-      } else {
-        newSet.add(eventId);
-      }
-      return newSet;
-    });
   };
 
   // Simple reschedule function
@@ -603,105 +577,6 @@ const Index = () => {
     }
   };
 
-  // Test functions for calendar API
-  const testCreateEvent = async () => {
-    if (!accessToken) {
-      Alert.alert("Error", "Please sign in first");
-      return;
-    }
-
-    try {
-      console.log("Starting create event test...");
-      console.log("Access token available:", !!accessToken);
-      console.log("API Base URL:", API_BASE_URL);
-
-      // First test basic connectivity
-      try {
-        const testResponse = await fetch(`${API_BASE_URL}/`);
-        console.log("Basic connectivity test:", testResponse.status);
-      } catch (connectError) {
-        console.error("Connectivity test failed:", connectError);
-        Alert.alert(
-          "Network Error",
-          "Cannot connect to server. Check your network connection and server status."
-        );
-        return;
-      }
-
-      const apiService = createApiService(accessToken);
-      const result = await apiService.createEvent({
-        title: createEventTitle,
-        start_datetime: createStartDateTime,
-        end_datetime: createEndDateTime,
-        description: "Created from React Native app",
-      });
-
-      Alert.alert("Success", `Event created: ${result.message}`);
-      console.log("Create event result:", result);
-    } catch (error: any) {
-      Alert.alert("Error", `Failed to create event: ${error.message}`);
-      console.error("Create event error:", error);
-    }
-  };
-
-  const testMoveEvent = async () => {
-    if (!accessToken) {
-      Alert.alert("Error", "Please sign in first");
-      return;
-    }
-
-    try {
-      const apiService = createApiService(accessToken);
-      const result = await apiService.moveEvent({
-        title: moveEventTitle,
-        current_start_datetime: moveCurrentStartDateTime,
-        new_start_datetime: moveNewStartDateTime,
-        new_end_datetime: moveNewEndDateTime,
-      });
-
-      Alert.alert("Success", `Event moved: ${result.message}`);
-      console.log("Move event result:", result);
-    } catch (error: any) {
-      Alert.alert("Error", `Failed to move event: ${error.message}`);
-      console.error("Move event error:", error);
-    }
-  };
-
-  const testFindEvents = async () => {
-    if (!accessToken) {
-      Alert.alert("Error", "Please sign in first");
-      return;
-    }
-
-    try {
-      console.log("Starting find events test...");
-      console.log("Date to search:", findEventsDate);
-
-      const apiService = createApiService(accessToken);
-      const result = await apiService.findEvents({
-        date: findEventsDate,
-      });
-
-      // Format the events for display
-      const eventsList =
-        result.events
-          ?.map(
-            (event: any) =>
-              `• ${event.title} (${event.start_time} - ${event.end_time})`
-          )
-          .join("\n") || "No events found";
-
-      Alert.alert(
-        `Events on ${findEventsDate}`,
-        `Found ${result.events?.length || 0} events:\n\n${eventsList}`
-      );
-      console.log("Find events result:", result);
-    } catch (error: any) {
-      Alert.alert("Error", `Failed to find events: ${error.message}`);
-      console.error("Find events error:", error);
-    }
-  };
-
   // Calculate total focused time from all events
   const calculateTotalFocusedTime = () => {
     if (!todaysEvents || todaysEvents.length === 0) return "0h";
@@ -868,7 +743,16 @@ const Index = () => {
               </Text>
             </View>
             <View style={styles.profileAvatar}>
-              <Text style={styles.avatarText}>J</Text>
+              <Text style={styles.avatarText}>
+                {userInfo?.userInfo?.name
+                  ? userInfo.userInfo.name
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2)
+                  : "U"}
+              </Text>
             </View>
           </View>
 
@@ -1120,144 +1004,18 @@ const Index = () => {
             )}
           </View>
 
-          {/* Debug Panel Toggle */}
-          <TouchableOpacity
-            style={styles.debugToggle}
-            onPress={() => setShowDebugPanel(!showDebugPanel)}
-          >
-            <Text style={styles.debugToggleText}>
-              {showDebugPanel ? "Hide" : "Show"} Calendar Functions
-            </Text>
-          </TouchableOpacity>
-
-          {/* Existing Calendar Functionality - Hidden by default */}
-          {showDebugPanel && (
-            <View style={styles.debugPanel}>
-              <View style={styles.buttonContainer}>
-                <Button onPress={signOut}>Logout</Button>
-                <Button onPress={getCurrentUser}>Get current user</Button>
-                <Button onPress={fetchTodaysEvents}>🔄 Refresh Events</Button>
-              </View>
-
-              {accessToken && (
-                <>
-                  {/* Create Event Section */}
-                  <View style={styles.apiTestContainer}>
-                    <Text style={styles.sectionTitle}>Create Event</Text>
-
-                    <View style={styles.inputContainer}>
-                      <Text>Event Title:</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={createEventTitle}
-                        onChangeText={setCreateEventTitle}
-                        placeholder="Enter event title"
-                      />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                      <Text>Start DateTime (YYYY-MM-DDTHH:mm:ss):</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={createStartDateTime}
-                        onChangeText={setCreateStartDateTime}
-                        placeholder="2025-12-28T10:00:00"
-                      />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                      <Text>End DateTime (YYYY-MM-DDTHH:mm:ss):</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={createEndDateTime}
-                        onChangeText={setCreateEndDateTime}
-                        placeholder="2025-12-28T11:00:00"
-                      />
-                    </View>
-
-                    <View style={styles.buttonContainer}>
-                      <Button onPress={testCreateEvent}>Create Event</Button>
-                    </View>
-                  </View>
-
-                  {/* Move Event Section */}
-                  <View style={styles.apiTestContainer}>
-                    <Text style={styles.sectionTitle}>Move Event</Text>
-
-                    <View style={styles.inputContainer}>
-                      <Text>Event Title to Move:</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={moveEventTitle}
-                        onChangeText={setMoveEventTitle}
-                        placeholder="Enter event title to move"
-                      />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                      <Text>Current Start DateTime:</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={moveCurrentStartDateTime}
-                        onChangeText={setMoveCurrentStartDateTime}
-                        placeholder="2025-12-28T10:00:00"
-                      />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                      <Text>New Start DateTime:</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={moveNewStartDateTime}
-                        onChangeText={setMoveNewStartDateTime}
-                        placeholder="2025-12-28T14:00:00"
-                      />
-                    </View>
-
-                    <View style={styles.inputContainer}>
-                      <Text>New End DateTime:</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={moveNewEndDateTime}
-                        onChangeText={setMoveNewEndDateTime}
-                        placeholder="2025-12-28T15:00:00"
-                      />
-                    </View>
-
-                    <View style={styles.buttonContainer}>
-                      <Button onPress={testMoveEvent}>Move Event</Button>
-                    </View>
-                  </View>
-
-                  {/* Find Events Section */}
-                  <View style={styles.apiTestContainer}>
-                    <Text style={styles.sectionTitle}>Find Events by Date</Text>
-
-                    <View style={styles.inputContainer}>
-                      <Text>Date (YYYY-MM-DD):</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={findEventsDate}
-                        onChangeText={setFindEventsDate}
-                        placeholder="2025-12-28"
-                      />
-                    </View>
-
-                    <View style={styles.buttonContainer}>
-                      <Button onPress={testFindEvents}>Find All Events</Button>
-                    </View>
-                  </View>
-                </>
-              )}
-
-              <View style={styles.userInfoContainer}>
-                <Text style={styles.sectionTitle}>User Info:</Text>
-                <Text style={styles.userInfoText}>
-                  {JSON.stringify(userInfo, null, 2)}
-                </Text>
-              </View>
-            </View>
-          )}
+          {/* Action Buttons */}
+          <View style={styles.actionButtonsContainer}>
+            <TouchableOpacity style={styles.actionButton} onPress={signOut}>
+              <Text style={styles.actionButtonText}>🚪 Logout</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={fetchTodaysEvents}
+            >
+              <Text style={styles.actionButtonText}>🔄 Refresh Events</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       ) : (
         <View style={styles.signInContainer}>
@@ -1420,11 +1178,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 24,
   },
-  taskLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
   taskCircle: {
     width: 20,
     height: 20,
@@ -1435,6 +1188,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
+  },
+  taskLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
   },
   taskContent: {
     flex: 1,
@@ -1467,23 +1225,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  debugToggle: {
-    backgroundColor: "#E0E0E0",
-    padding: 12,
-    borderRadius: 8,
+  actionButtonsContainer: {
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 32,
+    paddingHorizontal: 20,
+    gap: 12,
   },
-  debugToggleText: {
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
+  actionButton: {
+    backgroundColor: "#8B5CF6",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minWidth: 160,
+    alignItems: "center",
   },
-  debugPanel: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 20,
+  actionButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
   },
   signInContainer: {
     flex: 1,
@@ -1503,51 +1262,9 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textAlign: "center",
   },
-  // Existing styles for calendar functionality
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    margin: 20,
-  },
-  scrollContent: {
-    padding: 20,
-  },
   buttonContainer: {
     gap: 10,
     marginBottom: 20,
-  },
-  apiTestContainer: {
-    backgroundColor: "#F8F9FA",
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#1A1A1A",
-  },
-  inputContainer: {
-    marginBottom: 15,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 4,
-    padding: 8,
-    marginTop: 5,
-  },
-  userInfoContainer: {
-    backgroundColor: "#F8F9FA",
-    padding: 15,
-    borderRadius: 8,
-  },
-  userInfoText: {
-    fontSize: 12,
-    fontFamily: "monospace",
-    color: "#666",
   },
   loadingContainer: {
     padding: 20,

@@ -541,18 +541,14 @@ export default function AIPlannerScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-            {/* Header */}
-            
+      {/* Header */}
       <View style={styles.header}>
-                
         <TouchableOpacity onPress={() => router.back()}>
-                    <Text style={styles.backButton}>← Back</Text>
-                  
+          <Text style={styles.backButton}>← Back</Text>
         </TouchableOpacity>
-                
+
         <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>AI Planner</Text>
-                    
+          <Text style={styles.headerTitle}>AI Planner</Text>
           {userCheckLoading ? (
             <Text style={styles.statusText}>Checking user...</Text>
           ) : currentUser ? (
@@ -560,19 +556,16 @@ export default function AIPlannerScreen() {
           ) : (
             <Text style={styles.statusTextError}>❌ Please sign in first</Text>
           )}
-                  
         </View>
-                
+
         <View style={styles.placeholder} />
-              
       </View>
-            {/* Messages */}
-            
+
+      {/* Messages */}
       <ScrollView
         style={styles.messagesContainer}
         showsVerticalScrollIndicator={false}
       >
-                
         {messages.map((msg: any) => (
           <View
             key={msg.id}
@@ -581,84 +574,63 @@ export default function AIPlannerScreen() {
               msg.isBot ? styles.botMessageWrapper : styles.userMessageWrapper,
             ]}
           >
-                        
             <View
               style={[
                 styles.messageBubble,
                 msg.isBot ? styles.botMessage : styles.userMessage,
               ]}
             >
-                            
               <Text
                 style={[
                   styles.messageText,
                   msg.isBot ? styles.botMessageText : styles.userMessageText,
                 ]}
               >
-                                {msg.text}
-                              
+                {msg.text}
               </Text>
-                                           
+
               {/* Confirmation buttons for AI plan */}
-                            
               {msg.showConfirmation && currentPlan && (
                 <View style={styles.confirmationButtons}>
-                                    
                   <TouchableOpacity
                     style={styles.confirmButton}
                     onPress={confirmPlan}
                     disabled={isLoading}
                   >
-                                        
                     <Text style={styles.confirmButtonText}>
-                                            
                       {isLoading ? "Saving..." : "✅ Confirm & Save"}
-                                          
                     </Text>
-                                      
                   </TouchableOpacity>
-                                    
+
                   <TouchableOpacity
                     style={styles.rejectButton}
                     onPress={rejectPlan}
                     disabled={isLoading}
                   >
-                                        
                     <Text style={styles.rejectButtonText}>❌ Modify</Text>
-                                      
                   </TouchableOpacity>
-                                  
                 </View>
               )}
-                          
             </View>
-                      
           </View>
         ))}
-                         {/* Loading indicator */}
-                
+
+        {/* Loading indicator */}
         {isLoading && (
           <View style={styles.loadingWrapper}>
-                        
             <View style={styles.loadingBubble}>
-                            
               <Text style={styles.loadingText}>🤖 Planning your day...</Text>
-                          
             </View>
-                      
           </View>
         )}
-              
       </ScrollView>
-            {/* Input Area */}
-            
+
+      {/* Input Area */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.inputContainer}
       >
-                
         <View style={styles.inputWrapper}>
-                    
           <TextInput
             style={[styles.textInput, !currentUser && styles.textInputDisabled]}
             value={message}
@@ -673,7 +645,7 @@ export default function AIPlannerScreen() {
             maxLength={500}
             editable={!!currentUser}
           />
-                    
+
           <TouchableOpacity
             style={[
               styles.sendButton,
@@ -684,26 +656,16 @@ export default function AIPlannerScreen() {
             onPress={sendMessage}
             disabled={!message.trim() || isLoading || !currentUser}
           >
-                        
-            <Text style={styles.sendButtonText}>
-                            {isLoading ? "⏳" : "→"}
-                          
-            </Text>
-                      
+            <Text style={styles.sendButtonText}>{isLoading ? "⏳" : "→"}</Text>
           </TouchableOpacity>
-                  
         </View>
-                
+
         <Text style={styles.suggestionText}>
-                    
           {currentUser
             ? 'Try: "I need 2 hours for project work, 1 hour gym, and grocery shopping"'
             : "Please sign in with Google to start planning your day"}
-                  
         </Text>
-              
       </KeyboardAvoidingView>
-          
     </SafeAreaView>
   );
 }
