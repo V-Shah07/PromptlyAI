@@ -22,6 +22,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   checkTimeSlotConflict,
+  deleteTodaysEvent,
   findEventsByDate,
   getLocalDateString,
   moveEvent,
@@ -385,6 +386,66 @@ const Index = () => {
     );
   };
 
+  // Delete event function
+  const handleDeleteEvent = async (event: any) => {
+    if (!accessToken) {
+      Alert.alert("Error", "Please sign in to delete events");
+      return;
+    }
+
+    // Show confirmation dialog first
+    Alert.alert(
+      "Delete Event",
+      `Are you sure you want to delete "${event.title}"? This action cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Convert start_time to HH:mm format for deleteTodaysEvent
+              const startTime = event.start_time; // e.g., "10:30 PM"
+
+              // Convert to 24-hour format
+              const [time, period] = startTime.split(" ");
+              const [hours, minutes] = time.split(":").map(Number);
+              let hour24 = hours;
+
+              if (period === "PM" && hours !== 12) hour24 += 12;
+              if (period === "AM" && hours === 12) hour24 = 0;
+
+              const timeString = `${hour24
+                .toString()
+                .padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+
+              console.log(
+                `🗑️ Deleting event: "${event.title}" at ${timeString}`
+              );
+
+              const result = await deleteTodaysEvent(
+                event.title,
+                timeString,
+                accessToken
+              );
+
+              console.log("✅ Event deleted successfully:", result);
+
+              // Refresh events to update the UI
+              await fetchEventsForDate(selectedDate);
+            } catch (error) {
+              console.error("❌ Error deleting event:", error);
+              Alert.alert(
+                "Error",
+                `Failed to delete "${event.title}". Please try again.`
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   // Function to navigate to previous day
   const goToPreviousDay = () => {
     const currentDate = new Date(selectedDate + "T12:00:00"); // Add time to avoid timezone issues
@@ -648,6 +709,7 @@ const Index = () => {
     eventId,
     onToggleComplete,
     onReschedule,
+    onDelete,
     event,
     description,
     tags,
@@ -661,6 +723,7 @@ const Index = () => {
     eventId: string;
     onToggleComplete: (eventId: string) => void;
     onReschedule: (event: any) => void;
+    onDelete: (event: any) => void;
     event: any;
     description?: string;
     tags?: string[];
@@ -702,7 +765,7 @@ const Index = () => {
             duration: 150,
             useNativeDriver: true,
           }).start(() => {
-            console.log("Delete func");
+            onDelete(event);
             translateX.setValue(0);
           });
         } else {
@@ -1244,6 +1307,7 @@ const Index = () => {
                       )}
                       onToggleComplete={toggleTaskCompletion}
                       onReschedule={handleRescheduleEvent}
+                      onDelete={handleDeleteEvent}
                       event={event}
                       description={event.description}
                       tags={firestoreTags}

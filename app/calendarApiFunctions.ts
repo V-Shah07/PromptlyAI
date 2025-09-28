@@ -35,6 +35,14 @@ interface ApiResponse<T> {
   data?: T;
   events?: CalendarEvent[];
   total_events?: number;
+  success?: boolean;
+  error?: any;
+}
+
+interface DeleteEventData {
+  title: string;
+  start_datetime: string; // YYYY-MM-DDTHH:mm:ss format
+  calendar_id?: string;
 }
 
 // Configuration
@@ -151,6 +159,38 @@ export const moveEvent = async (
     return await response.json();
   } catch (error) {
     console.error("Error moving event:", error);
+    throw error;
+  }
+};
+
+/**
+ * Delete an existing event from the calendar
+ * @param deleteData - Delete event details
+ * @param accessToken - Google access token
+ * @returns Promise with delete result
+ */
+export const deleteEvent = async (
+  deleteData: DeleteEventData,
+  accessToken: string
+): Promise<ApiResponse<any>> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/event/delete`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(deleteData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to delete event");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting event:", error);
     throw error;
   }
 };
@@ -345,5 +385,123 @@ export const smartRescheduleEvent = async (
       success: false,
       message: `Reschedule failed: ${error.message}`,
     };
+  }
+};
+
+/**
+ * Delete an event by title and start time
+ * @param title - Event title to delete
+ * @param startDateTime - Start time in ISO format (YYYY-MM-DDTHH:mm:ss)
+ * @param accessToken - Google access token
+ * @param calendarId - Optional calendar ID (defaults to 'primary')
+ * @returns Promise with delete result
+ */
+export const deleteEventByTitle = async (
+  title: string,
+  startDateTime: string,
+  accessToken: string,
+  calendarId: string = "primary"
+): Promise<ApiResponse<any>> => {
+  return await deleteEvent(
+    {
+      title,
+      start_datetime: startDateTime,
+      calendar_id: calendarId,
+    },
+    accessToken
+  );
+};
+
+/**
+ * Delete an event from today's events
+ * @param title - Event title to delete
+ * @param startTime - Start time in HH:mm format (e.g., "09:00")
+ * @param accessToken - Google access token
+ * @param calendarId - Optional calendar ID (defaults to 'primary')
+ * @returns Promise with delete result
+ */
+export const deleteTodaysEvent = async (
+  title: string,
+  startTime: string,
+  accessToken: string,
+  calendarId: string = "primary"
+): Promise<ApiResponse<any>> => {
+  const today = getLocalDateString();
+  const startDateTime = `${today}T${startTime}:00`;
+
+  return await deleteEventByTitle(
+    title,
+    startDateTime,
+    accessToken,
+    calendarId
+  );
+};
+
+/**
+ * Delete multiple events with the same title
+ * @param title - Event title to delete
+ * @param accessToken - Google access token
+ * @param calendarId - Optional calendar ID (defaults to 'primary')
+ * @returns Promise with array of delete results
+ */
+export const deleteAllEventsWithTitle = async (
+  title: string,
+  accessToken: string,
+  calendarId: string = "primary"
+): Promise<ApiResponse<any>[]> => {
+  try {
+    // First, find all events with this title
+    const today = getLocalDateString();
+    const events = await findEventsByDate(today, accessToken);
+
+    const matchingEvents = events.filter(
+      (event) => event.title.toLowerCase() === title.toLowerCase()
+    );
+
+    console.log(`Found ${matchingEvents.length} events with title "${title}"`);
+
+    // Delete each matching event
+    const deleteResults: ApiResponse<any>[] = [];
+
+    for (const event of matchingEvents) {
+      try {
+        // Convert event time back to ISO format
+        const convertToISO = (timeStr: string): string => {
+          const [time, period] = timeStr.split(" ");
+          const [hours, minutes] = time.split(":").map(Number);
+          let hour24 = hours;
+
+          if (period === "PM" && hours !== 12) hour24 += 12;
+          if (period === "AM" && hours === 12) hour24 = 0;
+
+          return `${today}T${hour24.toString().padStart(2, "0")}:${minutes
+            .toString()
+            .padStart(2, "0")}:00`;
+        };
+
+        const startDateTime = convertToISO(event.start_time);
+
+        const result = await deleteEventByTitle(
+          event.title,
+          startDateTime,
+          accessToken,
+          calendarId
+        );
+
+        deleteResults.push(result);
+      } catch (error) {
+        console.error(`Failed to delete event: ${event.title}`, error);
+        deleteResults.push({
+          success: false,
+          message: `Failed to delete ${event.title}`,
+          error: error,
+        });
+      }
+    }
+
+    return deleteResults;
+  } catch (error) {
+    console.error("Error deleting events with title:", error);
+    throw error;
   }
 };
