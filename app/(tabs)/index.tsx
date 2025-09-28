@@ -82,6 +82,7 @@ const Index = () => {
   const [selectedDate, setSelectedDate] = React.useState<string>(
     getLocalDateString()
   );
+  const [showUserMenu, setShowUserMenu] = React.useState(false);
 
   // Effect to check for existing user and fetch events on mount
   useEffect(() => {
@@ -553,10 +554,21 @@ const Index = () => {
       await GoogleSignin.signOut();
       setUserInfo(null);
       setAccessToken(null);
+      setShowUserMenu(false);
       Alert.alert("Signed out successfully");
     } catch (error) {
       console.error(error);
     }
+  };
+
+  const handleSettings = () => {
+    Alert.alert("Settings", "Settings feature coming soon!");
+    setShowUserMenu(false);
+  };
+
+  const handleAnalytics = () => {
+    Alert.alert("Analytics", "Analytics feature coming soon!");
+    setShowUserMenu(false);
   };
 
   const getCurrentUser = async () => {
@@ -742,7 +754,10 @@ const Index = () => {
                     })()}
               </Text>
             </View>
-            <View style={styles.profileAvatar}>
+            <TouchableOpacity
+              style={styles.profileAvatar}
+              onPress={() => setShowUserMenu(!showUserMenu)}
+            >
               <Text style={styles.avatarText}>
                 {userInfo?.userInfo?.name
                   ? userInfo.userInfo.name
@@ -751,9 +766,16 @@ const Index = () => {
                       .join("")
                       .toUpperCase()
                       .slice(0, 2)
+                  : userInfo?.name
+                  ? userInfo.name
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .slice(0, 2)
                   : "U"}
               </Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Daily Progress Card */}
@@ -1004,11 +1026,8 @@ const Index = () => {
             )}
           </View>
 
-          {/* Action Buttons */}
-          <View style={styles.actionButtonsContainer}>
-            <TouchableOpacity style={styles.actionButton} onPress={signOut}>
-              <Text style={styles.actionButtonText}>🚪 Logout</Text>
-            </TouchableOpacity>
+          {/* Refresh Button */}
+          <View style={styles.refreshButtonContainer}>
             <TouchableOpacity
               style={styles.actionButton}
               onPress={fetchTodaysEvents}
@@ -1029,6 +1048,39 @@ const Index = () => {
             color={GoogleSigninButton.Color.Dark}
             onPress={signIn}
           />
+        </View>
+      )}
+
+      {/* User Menu Modal */}
+      {showUserMenu && (
+        <View style={styles.userMenuOverlay}>
+          <TouchableOpacity
+            style={styles.userMenuBackdrop}
+            onPress={() => setShowUserMenu(false)}
+          />
+          <View style={styles.userMenu}>
+            <View style={styles.userMenuHeader}>
+              <Text style={styles.userMenuTitle}>Menu</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.userMenuItem}
+              onPress={handleSettings}
+            >
+              <Text style={styles.userMenuIcon}>⚙️</Text>
+              <Text style={styles.userMenuText}>Settings</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.userMenuItem}
+              onPress={handleAnalytics}
+            >
+              <Text style={styles.userMenuIcon}>📊</Text>
+              <Text style={styles.userMenuText}>Analytics</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.userMenuItem} onPress={signOut}>
+              <Text style={styles.userMenuIcon}>🚪</Text>
+              <Text style={styles.userMenuText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </SafeAreaView>
@@ -1231,6 +1283,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 12,
   },
+  refreshButtonContainer: {
+    alignItems: "center",
+    marginBottom: 32,
+    paddingHorizontal: 20,
+  },
   actionButton: {
     backgroundColor: "#8B5CF6",
     paddingHorizontal: 24,
@@ -1318,6 +1375,62 @@ const styles = StyleSheet.create({
   rescheduleButtonText: {
     fontSize: 10,
     color: "#666",
+    fontWeight: "500",
+  },
+  userMenuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  userMenuBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  userMenu: {
+    position: "absolute",
+    top: 100,
+    right: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 180,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    backdropFilter: "blur(10px)",
+  },
+  userMenuHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  userMenuTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  userMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  userMenuIcon: {
+    fontSize: 18,
+    marginRight: 12,
+  },
+  userMenuText: {
+    fontSize: 16,
+    color: "#374151",
     fontWeight: "500",
   },
 });

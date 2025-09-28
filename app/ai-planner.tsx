@@ -83,6 +83,26 @@ const getUserInfo = async (googleId: string, email: string, name: string) => {
   };
 };
 
+// Helper function to render text with bold formatting
+const renderTextWithBold = (text: string, textStyle: any) => {
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      const boldText = part.slice(2, -2);
+      return (
+        <Text key={index} style={[textStyle, { fontWeight: "bold" }]}>
+          {boldText}
+        </Text>
+      );
+    }
+    return (
+      <Text key={index} style={textStyle}>
+        {part}
+      </Text>
+    );
+  });
+};
+
 export default function AIPlannerScreen() {
   const [input, setInput] = useState("");
   const [message, setMessage] = useState("");
@@ -132,12 +152,15 @@ export default function AIPlannerScreen() {
               setTodaysEvents(calendarEvents || []);
               let eventsText = "";
               if (calendarEvents && calendarEvents.length > 0) {
-                eventsText = "\n\n📅 **Your schedule for today:**\n";
+                eventsText = "\n\n📅 Your schedule for today:\n";
                 calendarEvents.forEach((event, index) => {
-                  // The API already returns formatted times like "05:30 PM"
-                  const startTime = event.start_time;
-                  const endTime = event.end_time;
-                  eventsText += `${index + 1}. **${
+                  // Format times to remove leading zeros and clean up formatting
+                  const formatTime = (timeStr: string) => {
+                    return timeStr.replace(/^0(\d)/, "$1").replace(/:00$/, "");
+                  };
+                  const startTime = formatTime(event.start_time);
+                  const endTime = formatTime(event.end_time);
+                  eventsText += `**${index + 1}.** **${
                     event.title
                   }** (${startTime} - ${endTime})\n`;
                   if (event.description && event.description.trim()) {
@@ -148,7 +171,7 @@ export default function AIPlannerScreen() {
                   }
                 });
                 eventsText +=
-                  "\nI'll help you plan around these existing events!";
+                  "\n\nDon't worry, I'll plan around your existing events!";
               } else {
                 eventsText =
                   "\n\n📅 You have no events scheduled for today - perfect for planning a productive day!";
@@ -157,7 +180,7 @@ export default function AIPlannerScreen() {
                 id: 1,
                 text: `Hello ${
                   userInfo.user.name || userInfo.user.email
-                }! 👋\n\nI'm your AI planning assistant. Tell me what you want to accomplish today and I'll create a personalized schedule for you.${eventsText}\n\nFor example: "I need to work on my project for 2 hours, go to the gym, and pick up groceries"`,
+                }! 👋\n\nI'm your AI planning assistant. Tell me what you want to accomplish today and I'll create a personalized schedule for you.${eventsText}`,
                 isBot: true,
                 timestamp: new Date(),
               };
@@ -171,7 +194,7 @@ export default function AIPlannerScreen() {
               id: 1,
               text: `Hello ${
                 userInfo.user.name || userInfo.user.email
-              }! 👋\n\nI'm your AI planning assistant. Tell me what you want to accomplish today and I'll create a personalized schedule for you.\n\n⚠️ Couldn't fetch your calendar events, but I can still help you plan your day!\n\nFor example: "I need to work on my project for 2 hours, go to the gym, and pick up groceries"`,
+              }! 👋\n\nI'm your AI planning assistant. Tell me what you want to accomplish today and I'll create a personalized schedule for you.\n\n⚠️ Couldn't fetch your calendar events, but I can still help you plan your day!`,
               isBot: true,
               timestamp: new Date(),
             };
@@ -266,37 +289,28 @@ export default function AIPlannerScreen() {
       setCurrentPlan(scheduleResult); // Format the response for display
 
       let responseText = `Here's your personalized schedule:\n\n`;
-      if (scheduleResult.summary) {
-        responseText += `📋 **Summary:**\n${scheduleResult.summary}\n\n`;
-      }
       if (
         scheduleResult.scheduled_tasks &&
         scheduleResult.scheduled_tasks.length > 0
       ) {
-        responseText += `📅 **Scheduled Tasks:**\n`;
         scheduleResult.scheduled_tasks.forEach((task, index) => {
-          responseText += `${index + 1}. **${task.title}** (${
-            task.start_time
-          } - ${task.end_time})\n`;
-          responseText += `   📂 ${task.category} | Priority: ${task.priority}\n`;
-          if (task.description) {
-            responseText += `   📝 ${task.description}\n`;
-          }
-          if (task.reasoning) {
-            responseText += `   💭 ${task.reasoning}\n`;
-          }
-          responseText += `\n`;
+          // Convert ISO datetime to human-readable format
+          const formatTime = (timeStr: string) => {
+            const date = new Date(timeStr);
+            return date
+              .toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })
+              .replace(/:00$/, "");
+          };
+          const startTime = formatTime(task.start_time);
+          const endTime = formatTime(task.end_time);
+          responseText += `**${index + 1}.** **${
+            task.title
+          }** (${startTime} - ${endTime})\n`;
         });
-      }
-      if (scheduleResult.conflicts && scheduleResult.conflicts.length > 0) {
-        responseText += `⚠️ **Conflicts:** ${scheduleResult.conflicts.join(
-          ", "
-        )}\n\n`;
-      }
-      if (scheduleResult.suggestions && scheduleResult.suggestions.length > 0) {
-        responseText += `💡 **Suggestions:** ${scheduleResult.suggestions.join(
-          ", "
-        )}`;
       } // Add AI response with the plan
 
       const aiResponse = {
@@ -586,7 +600,10 @@ export default function AIPlannerScreen() {
                   msg.isBot ? styles.botMessageText : styles.userMessageText,
                 ]}
               >
-                {msg.text}
+                {renderTextWithBold(
+                  msg.text,
+                  msg.isBot ? styles.botMessageText : styles.userMessageText
+                )}
               </Text>
 
               {/* Confirmation buttons for AI plan */}
@@ -598,7 +615,7 @@ export default function AIPlannerScreen() {
                     disabled={isLoading}
                   >
                     <Text style={styles.confirmButtonText}>
-                      {isLoading ? "Saving..." : "✅ Confirm & Save"}
+                      {isLoading ? "Saving..." : "✅ Confirm"}
                     </Text>
                   </TouchableOpacity>
 
@@ -831,6 +848,7 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     fontSize: 14,
+    textAlign: "center",
   },
   rejectButton: {
     backgroundColor: "#E5E7EB",
@@ -844,6 +862,7 @@ const styles = StyleSheet.create({
     color: "#374151",
     fontWeight: "600",
     fontSize: 14,
+    textAlign: "center",
   },
   loadingWrapper: {
     alignItems: "flex-start",
