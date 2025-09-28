@@ -1,3 +1,4 @@
+import { getAllEventTags } from "@/lib/firebase";
 import {
   GoogleSignin,
   GoogleSigninButton,
@@ -79,6 +80,9 @@ const Index = () => {
   const [completedTasks, setCompletedTasks] = React.useState<Set<string>>(
     new Set()
   );
+  const [eventTags, setEventTags] = React.useState<{
+    [eventTitle: string]: string[];
+  }>({});
   const [selectedDate, setSelectedDate] = React.useState<string>(
     getLocalDateString()
   );
@@ -483,6 +487,10 @@ const Index = () => {
 
       const events = await findEventsByDate(date, accessToken);
       console.log("📅 Raw API response - Total events found:", events.length);
+      console.log(
+        "📅 Raw API response (full):",
+        JSON.stringify(events, null, 2)
+      );
       console.log("📅 Events for", date, ":", events);
 
       // Log each event title for easier debugging
@@ -493,9 +501,38 @@ const Index = () => {
           })`
         );
         console.log("📅 Full event object:", JSON.stringify(event, null, 2));
+
+        // Log tags specifically
+        console.log(`🔍 Checking tags for "${event.title}":`, {
+          hasTagsProperty: "tags" in event,
+          tagsValue: event.tags,
+          tagsType: typeof event.tags,
+          tagsIsArray: Array.isArray(event.tags),
+          allEventKeys: Object.keys(event),
+        });
+
+        if (event.tags && Array.isArray(event.tags) && event.tags.length > 0) {
+          console.log(`🏷️ Tags for "${event.title}":`, event.tags);
+        } else {
+          console.log(`❌ No valid tags found for "${event.title}"`);
+        }
       });
 
       setTodaysEvents(events || []);
+
+      // Load event tags from Firestore
+      try {
+        const currentUser = await GoogleSignin.getCurrentUser();
+        if (currentUser) {
+          const userId = currentUser.user.id;
+          const tagsMap = await getAllEventTags(userId);
+          setEventTags(tagsMap);
+          console.log("🏷️ Loaded event tags from Firestore:", tagsMap);
+        }
+      } catch (tagError) {
+        console.error("❌ Error loading event tags:", tagError);
+        setEventTags({});
+      }
     } catch (error) {
       console.error("❌ Error fetching events for date:", date, error);
       setTodaysEvents([]);
@@ -662,6 +699,7 @@ const Index = () => {
     onReschedule,
     event,
     description,
+    tags,
   }: {
     task: string;
     time: string;
@@ -674,54 +712,102 @@ const Index = () => {
     onReschedule: (event: any) => void;
     event: any;
     description?: string;
-  }) => (
-    <TouchableOpacity
-      style={styles.taskItem}
-      onPress={() =>
-        router.push({
-          pathname: "/task-details",
-          params: { task, time, duration, category, color, description },
-        })
-      }
-    >
-      <View style={styles.taskLeft}>
-        <TouchableOpacity
-          style={[styles.taskCircle, isCompleted && styles.taskCircleCompleted]}
-          onPress={(e) => {
-            e.stopPropagation(); // Prevent navigating to task details
-            onToggleComplete(eventId);
-          }}
-        >
-          {isCompleted && <Text style={styles.checkmark}>✓</Text>}
-        </TouchableOpacity>
-        <View style={styles.taskContent}>
-          <Text
-            style={[styles.taskText, isCompleted && styles.taskTextCompleted]}
-          >
-            {task}
-          </Text>
-          <Text style={styles.taskTime}>{time}</Text>
-        </View>
-      </View>
-      <View style={styles.taskRight}>
-        <Text style={styles.taskDuration}>{duration}</Text>
-        <View style={styles.taskRightBottom}>
+    tags?: string[];
+  }) => {
+    // Helper function to get tag color and style
+    const getTagStyle = (tag: string) => {
+      // Priority tags
+      if (tag === "high") return { backgroundColor: "#EF4444", color: "white" };
+      if (tag === "medium")
+        return { backgroundColor: "#F59E0B", color: "white" };
+      if (tag === "low") return { backgroundColor: "#10B981", color: "white" };
+
+      // Category tags
+      const categoryColors: { [key: string]: string } = {
+        work: "#5A6ACF",
+        academic: "#8B5CF6",
+        social: "#AB47BC",
+        extracurriculars: "#F59E0B",
+        others: "#6B7280",
+        health: "#FF8A65",
+        fitness: "#10B981",
+      };
+
+      return {
+        backgroundColor: categoryColors[tag] || "#6B7280",
+        color: "white",
+      };
+    };
+
+    return (
+      <TouchableOpacity
+        style={styles.taskItem}
+        onPress={() =>
+          router.push({
+            pathname: "/task-details",
+            params: {
+              task,
+              time,
+              duration,
+              category,
+              color,
+              description,
+              tags: JSON.stringify(tags || []),
+            },
+          })
+        }
+      >
+        <View style={styles.taskLeft}>
           <TouchableOpacity
-            style={styles.rescheduleButton}
+            style={[
+              styles.taskCircle,
+              isCompleted && styles.taskCircleCompleted,
+            ]}
             onPress={(e) => {
               e.stopPropagation(); // Prevent navigating to task details
-              onReschedule(event);
+              onToggleComplete(eventId);
             }}
           >
-            <Text style={styles.rescheduleButtonText}>📅 Reschedule</Text>
+            {isCompleted && <Text style={styles.checkmark}>✓</Text>}
           </TouchableOpacity>
-          <View style={[styles.categoryBadge, { backgroundColor: color }]}>
-            <Text style={styles.categoryText}>{category}</Text>
+          <View style={styles.taskContent}>
+            <Text
+              style={[styles.taskText, isCompleted && styles.taskTextCompleted]}
+            >
+              {task}
+            </Text>
+            <Text style={styles.taskTime}>{time}</Text>
+            {tags && tags.length > 0 && (
+              <View style={styles.tagsContainer}>
+                {tags.map((tag, index) => (
+                  <View key={index} style={[styles.tag, getTagStyle(tag)]}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.taskRight}>
+          <Text style={styles.taskDuration}>{duration}</Text>
+          <View style={styles.taskRightBottom}>
+            <TouchableOpacity
+              style={styles.rescheduleButton}
+              onPress={(e) => {
+                e.stopPropagation(); // Prevent navigating to task details
+                onReschedule(event);
+              }}
+            >
+              <Text style={styles.rescheduleButtonText}>📅 Reschedule</Text>
+            </TouchableOpacity>
+            <View style={[styles.categoryBadge, { backgroundColor: color }]}>
+              <Text style={styles.categoryText}>{category}</Text>
+            </View>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -932,15 +1018,65 @@ const Index = () => {
                     }
                   };
 
-                  // Assign colors based on event title/content (simple categorization)
-                  const getCategoryAndColor = (
-                    title: string,
-                    description?: string
-                  ) => {
+                  // Use Firestore tags for categorization, fallback to title-based categorization
+                  const getCategoryAndColor = (event: any) => {
+                    const firestoreTags = eventTags[event.title] || [];
+                    console.log(`🔍 Processing tags for "${event.title}":`, {
+                      eventTags: event.tags,
+                      firestoreTags,
+                    });
+
+                    // If Firestore provides tags, use the first category tag
+                    if (firestoreTags && firestoreTags.length > 0) {
+                      console.log(
+                        `✅ Found ${firestoreTags.length} Firestore tags:`,
+                        firestoreTags
+                      );
+
+                      const categoryTag = firestoreTags.find((tag: string) =>
+                        [
+                          "work",
+                          "academic",
+                          "social",
+                          "extracurriculars",
+                          "others",
+                          "health",
+                          "fitness",
+                        ].includes(tag)
+                      );
+
+                      if (categoryTag) {
+                        console.log(`🎯 Using category tag: "${categoryTag}"`);
+                        const categoryColors: { [key: string]: string } = {
+                          work: "#5A6ACF",
+                          academic: "#8B5CF6",
+                          social: "#AB47BC",
+                          extracurriculars: "#F59E0B",
+                          others: "#6B7280",
+                          health: "#FF8A65",
+                          fitness: "#10B981",
+                        };
+                        return {
+                          category: categoryTag,
+                          color: categoryColors[categoryTag] || "#6B7280",
+                        };
+                      } else {
+                        console.log(
+                          `⚠️ No valid category tag found in:`,
+                          firestoreTags
+                        );
+                      }
+                    } else {
+                      console.log(
+                        `❌ No Firestore tags found for "${event.title}"`
+                      );
+                    }
+
+                    // Fallback to title-based categorization
                     const text = (
-                      title +
+                      event.title +
                       " " +
-                      (description || "")
+                      (event.description || "")
                     ).toLowerCase();
 
                     if (
@@ -975,14 +1111,27 @@ const Index = () => {
                     }
                   };
 
-                  const { category, color } = getCategoryAndColor(
-                    event.title,
-                    event.description
+                  const { category, color } = getCategoryAndColor(event);
+                  console.log(
+                    `📊 Final categorization for "${event.title}": category="${category}", color="${color}"`
                   );
+
                   const duration = calculateDuration(
                     event.start_time,
                     event.end_time
                   );
+
+                  // Get tags from Firestore instead of event object
+                  const firestoreTags = eventTags[event.title] || [];
+
+                  console.log(`🎯 Creating TaskItem for "${event.title}":`, {
+                    hasEventTags: !!event.tags,
+                    eventTags: event.tags,
+                    eventTagsLength: event.tags?.length || 0,
+                    hasFirestoreTags: !!firestoreTags,
+                    firestoreTags: firestoreTags,
+                    firestoreTagsLength: firestoreTags.length,
+                  });
 
                   return (
                     <TaskItem
@@ -1000,6 +1149,7 @@ const Index = () => {
                       onReschedule={handleRescheduleEvent}
                       event={event}
                       description={event.description}
+                      tags={firestoreTags}
                     />
                   );
                 })
@@ -1251,6 +1401,25 @@ const styles = StyleSheet.create({
   },
   taskContent: {
     flex: 1,
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 6,
+    gap: 4,
+  },
+  tag: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginRight: 4,
+    marginBottom: 2,
+  },
+  tagText: {
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   taskText: {
     fontSize: 16,

@@ -15,6 +15,9 @@ web-build/
 .env.local
 .env.*.local
 
+# Firebase configuration
+lib/firebase.ts
+
 # macOS
 .DS_Store
 
@@ -29,3 +32,4 @@ web-build/
 
 expo-env.d.ts
 # @end expo-cli
+

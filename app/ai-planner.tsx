@@ -1,3 +1,4 @@
+import { saveEventTags } from "@/lib/firebase";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Audio } from "expo-av";
 import { router } from "expo-router";
@@ -596,6 +597,28 @@ export default function AIPlannerScreen() {
               "✅ Event created on date:",
               new Date(finalStartTime).toDateString()
             );
+
+            // Save tags to Firestore if they exist
+            if (task.tags && Array.isArray(task.tags) && task.tags.length > 0) {
+              try {
+                const currentUser = await GoogleSignin.getCurrentUser();
+                if (currentUser) {
+                  const userId = currentUser.user.id;
+                  await saveEventTags(userId, task.title, task.tags);
+                  console.log(
+                    "🏷️ Tags saved for event:",
+                    task.title,
+                    task.tags
+                  );
+                }
+              } catch (tagError) {
+                console.error(
+                  "❌ Error saving tags for event:",
+                  task.title,
+                  tagError
+                );
+              }
+            }
 
             createdEventsCount++;
           } catch (eventError) {
