@@ -1,3 +1,5 @@
+import { config } from "../../config";
+
 async function transcribeAudio(fileUri: string): Promise<string> {
   try {
     console.log("🔧 Transcribing audio from:", fileUri);
@@ -22,7 +24,7 @@ async function transcribeAudio(fileUri: string): Promise<string> {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer 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`,
+          Authorization: `Bearer ${config.OPENAI_API_KEY}`,
           "Content-Type": "multipart/form-data",
         },
         body: formData,
