@@ -599,13 +599,13 @@ const Index = () => {
   };
 
   const handleSettings = () => {
-    Alert.alert("Settings", "Settings feature coming soon!");
     setShowUserMenu(false);
+    router.push("/preferences");
   };
 
   const handleAnalytics = () => {
-    Alert.alert("Analytics", "Analytics feature coming soon!");
     setShowUserMenu(false);
+    router.push("/analytics");
   };
 
   const getCurrentUser = async () => {
@@ -800,9 +800,6 @@ const Index = () => {
             >
               <Text style={styles.rescheduleButtonText}>📅 Reschedule</Text>
             </TouchableOpacity>
-            <View style={[styles.categoryBadge, { backgroundColor: color }]}>
-              <Text style={styles.categoryText}>{category}</Text>
-            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -1438,16 +1435,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666666",
     marginBottom: 8,
-  },
-  categoryBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  categoryText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "600",
   },
   actionButtonsContainer: {
     alignItems: "center",
