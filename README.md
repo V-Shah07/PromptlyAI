@@ -1,6 +1,6 @@
 # Promptly - Agentic AI Personal Productivity Assistant
 
-![Promptly Logo](assets/images/icon.png)
+![Promptly Logo](logo.jpg)
 
 **Promptly** is an advanced agentic AI-powered React Native productivity app that acts as an intelligent personal assistant. It autonomously analyzes your schedule, makes intelligent decisions about task scheduling, and proactively manages your calendar through sophisticated AI agents that understand context, resolve conflicts, and optimize your daily workflow.
 
@@ -183,27 +183,6 @@
    npm run web
    ```
 
-## 🔑 Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-# Google OAuth
-GOOGLE_WEB_CLIENT_ID=your-web-client-id
-GOOGLE_IOS_CLIENT_ID=your-ios-client-id
-
-# Firebase
-FIREBASE_API_KEY=your-firebase-api-key
-FIREBASE_PROJECT_ID=your-firebase-project-id
-
-# Custom APIs
-PLANNING_API_URL=https://your-planning-api-url.com
-CALENDAR_API_URL=https://your-calendar-api-url.com
-
-# OpenAI
-OPENAI_API_KEY=your-openai-api-key
-```
-
 ## 📊 Analytics & Insights
 
 The app provides comprehensive analytics through Firebase Firestore:
@@ -218,9 +197,6 @@ The app provides comprehensive analytics through Firebase Firestore:
 - [ ] **Multi-Agent Architecture**: Deploy specialized AI agents for different domains (work, health, social)
 - [ ] **Advanced Agentic Capabilities**: Agents that can proactively suggest schedule optimizations
 - [ ] **Team Collaboration**: Multi-user agentic AI for shared calendars and collaborative planning
-- [ ] **Agent Learning**: Enhanced machine learning for agents to better understand user patterns
-- [ ] **Integration with more calendar providers**: Expand agentic AI to work with Outlook, Apple Calendar
-- [ ] **Advanced Agent Analytics**: Deep insights into agent decision-making and performance
 - [ ] **Custom Agent Training**: Personalized AI agents trained on individual user preferences
 
 ---
