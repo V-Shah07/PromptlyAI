@@ -106,13 +106,11 @@
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
-- npm or yarn
-- Expo CLI
-- iOS Simulator or Android Emulator (for development)
+- Node.js (v16+), npm/yarn, Expo CLI
+- iOS Simulator or Android Emulator
 - Google Cloud Console project with Calendar API enabled
 
-### Installation Steps
+### Quick Setup
 
 1. **Clone the repository**
 
@@ -216,25 +214,10 @@ OPENAI_API_KEY=your-openai-api-key
 
 The app provides comprehensive analytics through Firebase Firestore:
 
-### Time Tracking Analytics
-
-- **Efficiency Metrics**: Compare estimated vs actual task duration
-- **Completion Rates**: Track task completion percentage
-- **Time Distribution**: Analyze how time is spent across categories
-
-### Category Analytics
-
-- **Work Tasks**: Professional and project-related activities
-- **Health & Fitness**: Exercise, medical appointments, wellness
-- **Social**: Meetings, events, personal interactions
-- **Academic**: Study sessions, classes, educational activities
-- **Personal**: Individual tasks and self-care activities
-
-### Priority Analytics
-
-- **High Priority**: Urgent and important tasks
-- **Medium Priority**: Important but not urgent tasks
-- **Low Priority**: Nice-to-have tasks
+- **Time Efficiency**: Compare estimated vs actual task duration with completion rates
+- **Category Distribution**: Track work, health, social, academic, and personal activities
+- **Priority Analysis**: Monitor high, medium, and low priority task distribution
+- **Personalized Insights**: AI-generated recommendations for improving productivity
 
 ## 🎯 Key Features Implementation
 
@@ -250,20 +233,6 @@ The agentic AI planning system operates as an autonomous intelligent agent with 
 6. **Adaptive Learning**: System learns from user feedback and scheduling patterns to improve future agent decisions
 7. **Calendar Integration**: Agent directly creates and manages events in Google Calendar without human intervention
 8. **User Confirmation**: Users can approve, modify, or reject agent decisions, providing feedback for learning
-
-### Voice Integration
-
-- **Recording**: Uses Expo AV for high-quality audio recording
-- **Transcription**: OpenAI Whisper API converts speech to text
-- **Processing**: Transcribed text is sent to AI planning system
-- **Feedback**: Visual and haptic feedback during recording
-
-### Time Tracking System
-
-- **Stopwatch**: Built-in timer with pause/resume functionality
-- **Data Persistence**: All tracking data stored in Firebase
-- **Analytics**: Real-time insights into time management patterns
-- **Visualization**: Charts and graphs for easy understanding
 
 ## 🔒 Security & Privacy
 
