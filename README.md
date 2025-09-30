@@ -104,12 +104,6 @@
 
 ## 📱 Installation & Setup
 
-### Prerequisites
-
-- Node.js (v16+), npm/yarn, Expo CLI
-- iOS Simulator or Android Emulator
-- Google Cloud Console project with Calendar API enabled
-
 ### Quick Setup
 
 1. **Clone the repository**
@@ -219,29 +213,6 @@ The app provides comprehensive analytics through Firebase Firestore:
 - **Priority Analysis**: Monitor high, medium, and low priority task distribution
 - **Personalized Insights**: AI-generated recommendations for improving productivity
 
-## 🎯 Key Features Implementation
-
-### Agentic AI Planning System
-
-The agentic AI planning system operates as an autonomous intelligent agent with sophisticated decision-making capabilities:
-
-1. **Natural Language Understanding**: AI agent processes user input via text or voice, understanding intent and context
-2. **Contextual Analysis**: Agent autonomously analyzes existing calendar events, user preferences, and time constraints
-3. **Intelligent Decision Making**: AI agent makes independent decisions about task prioritization, duration estimation, and optimal scheduling
-4. **Proactive Conflict Resolution**: Agent anticipates and automatically resolves scheduling conflicts using advanced reasoning
-5. **Multi-step Execution**: Agent breaks down complex requests into sequential actions and executes them autonomously
-6. **Adaptive Learning**: System learns from user feedback and scheduling patterns to improve future agent decisions
-7. **Calendar Integration**: Agent directly creates and manages events in Google Calendar without human intervention
-8. **User Confirmation**: Users can approve, modify, or reject agent decisions, providing feedback for learning
-
-## 🔒 Security & Privacy
-
-- **OAuth2 Authentication**: Secure Google Sign-In integration
-- **Token Management**: Automatic token refresh and secure storage
-- **Data Encryption**: All data encrypted in transit and at rest
-- **Privacy Controls**: Users control their data and can delete accounts
-- **API Security**: Secure API endpoints with proper authentication
-
 ## 🔮 Future Roadmap
 
 - [ ] **Multi-Agent Architecture**: Deploy specialized AI agents for different domains (work, health, social)
@@ -249,8 +220,6 @@ The agentic AI planning system operates as an autonomous intelligent agent with 
 - [ ] **Team Collaboration**: Multi-user agentic AI for shared calendars and collaborative planning
 - [ ] **Agent Learning**: Enhanced machine learning for agents to better understand user patterns
 - [ ] **Integration with more calendar providers**: Expand agentic AI to work with Outlook, Apple Calendar
-- [ ] **Offline Agent Mode**: Agents that can work without internet connectivity
-- [ ] **Apple Watch Agent**: Companion app with agentic AI capabilities
 - [ ] **Advanced Agent Analytics**: Deep insights into agent decision-making and performance
 - [ ] **Custom Agent Training**: Personalized AI agents trained on individual user preferences
 
