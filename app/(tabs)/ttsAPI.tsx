@@ -2,7 +2,8 @@ async function transcribeAudio(fileUri: string): Promise<string> {
   try {
     console.log("🔧 Transcribing audio from:", fileUri);
 
-    const apiKey = "ADD_API_KEY_HERE";
+    const apiKey =
+      process.env.EXPO_PUBLIC_OPENAI_API_KEY || "your-openai-api-key-here";
     // Create form data for the API request
     const formData = new FormData();
 
