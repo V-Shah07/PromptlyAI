@@ -1,6 +1,6 @@
 # Promptly - Agentic AI Personal Productivity Assistant
 
-![Promptly Logo](logo.jpg)
+<img src="logo.jpg" alt="Promptly Logo" width="200" height="200">
 
 **Promptly** is an advanced agentic AI-powered React Native productivity app that acts as an intelligent personal assistant. It autonomously analyzes your schedule, makes intelligent decisions about task scheduling, and proactively manages your calendar through sophisticated AI agents that understand context, resolve conflicts, and optimize your daily workflow.
 
@@ -200,5 +200,3 @@ The app provides comprehensive analytics through Firebase Firestore:
 - [ ] **Custom Agent Training**: Personalized AI agents trained on individual user preferences
 
 ---
-
-**Built with ❤️ using React Native, Expo, and Agentic AI**
